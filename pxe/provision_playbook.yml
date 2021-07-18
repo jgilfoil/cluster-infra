@@ -1,0 +1,234 @@
+---
+- hosts: all
+  become: yes
+  user: vagrant
+  vars:
+    - tftp_path: /var/lib/tftpboot
+    - network: 192.168.1.0
+    - dns: 192.168.1.1
+  tasks:
+
+    # - name: yum update
+    #   yum: 
+    #     name: "*"
+    #     update_cache: yes
+    #     state: latest
+    #   when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+
+    # - name: apt-get update
+    #   apt: 
+    #     name: "*" 
+    #     update_cache: yes
+    #     force_apt_get: yes
+    #     state: latest
+    #   when: ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+
+    - name: install packages
+      package:
+        name:
+          - dnsmasq
+          - pxelinux
+          - syslinux-common
+          - nginx
+        state: latest
+
+    - name: stop dnsmasq
+      service:
+        name: dnsmasq
+        state: stopped
+      notify: restart dnsmasq
+
+    - name: create paths
+      file:
+        path: "{{ item }}"
+        state: directory
+        owner: root
+        group: root
+        mode: 0775
+      loop:
+        - "{{ tftp_path }}/memtest"
+        - "{{ tftp_path }}/pxelinux.cfg"
+
+    - name: Download memtest
+      get_url:
+        url: http://www.memtest.org/download/5.01/memtest86+-5.01.bin.gz
+        dest: "{{ tftp_path }}/memtest86+-5.01.bin.gz"
+        owner: root
+        group: root
+        mode: '0444'
+
+    - name: Extract memtest
+      shell: "cd {{ tftp_path }}; gzip -dk {{ tftp_path }}/memtest86+-5.01.bin.gz"
+      args:
+        creates: /var/lib/tftpboot/memtest86+-5.01.bin
+
+    - name: Download ubuntu 20.04
+      get_url:
+        url: https://releases.ubuntu.com/focal/ubuntu-20.04.2-live-server-amd64.iso
+        dest: "{{ tftp_path }}/ubuntu-20.04-live-server-amd64.iso"
+        owner: root
+        group: root
+        mode: '0444'
+
+    - name: mount ubuntu.iso
+      mount:
+        path: /mnt
+        src: "{{ tftp_path }}/ubuntu-20.04-live-server-amd64.iso"
+        fstype: iso9660
+        opts: ro,noauto
+        state: mounted
+
+    - name: extract vmlinuz
+      copy:
+        src: /mnt/casper/vmlinuz
+        dest: "{{ tftp_path }}/vmlinuz"
+        remote_src: yes
+        owner: root
+        group: root
+        mode: '0444'
+
+    - name: extract initrd
+      copy:
+        src: /mnt/casper/initrd
+        dest: "{{ tftp_path }}/initrd"
+        remote_src: yes
+        owner: root
+        group: root
+        mode: '0444'
+
+    - name: unmount ubuntu.iso
+      mount:
+        path: /mnt
+        state: unmounted
+
+    - name: move memtest bin
+      copy:
+        src: "{{ tftp_path }}/memtest86+-5.01.bin"
+        dest: "{{ tftp_path }}/memtest/memtest86+-5.01"
+        remote_src: yes
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Create dnsmasq defaults
+      copy:
+        content: |
+          default focal-live-install-autoinstall
+          prompt 1
+          timeout 15
+
+          label memtest86
+            menu label Memtest86+ 5.01
+            kernel /memtest/memtest86+-5.01
+
+          label focal-live-install
+            menu DEFAULT
+            menu label Install focal
+            kernel vmlinuz
+            initrd initrd
+            append root=/dev/ram0 ramdisk_size=1500000 ip=dhcp url=http://{{ ansible_enp0s8.ipv4.address }}/tftpboot/ubuntu-20.04-live-server-amd64.iso
+
+          label focal-live-install-autoinstall
+            menu DEFAULT
+            menu label Install focal - autoinstall
+            kernel vmlinuz
+            initrd initrd
+            append root=/dev/ram0 ramdisk_size=1500000 ip=dhcp url=http://{{ ansible_enp0s8.ipv4.address }}/tftpboot/ubuntu-20.04-live-server-amd64.iso autoinstall ds=nocloud-net;s=http://{{ ansible_enp0s8.ipv4.address }}/tftpboot/cloud-init-bios/
+        dest: "{{ tftp_path }}/pxelinux.cfg/default"
+
+
+    - name: Create symlinks
+      file:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+        owner: root
+        group: root
+        state: link
+      loop:
+        - { src: '/usr/lib/PXELINUX/pxelinux.0', dest: '{{ tftp_path }}/pxelinux.0'}
+        - { src: '/usr/lib/syslinux/modules/bios/ldlinux.c32', dest: '{{ tftp_path }}/ldlinux.c32'}
+
+    - name: Deploy dnsmasq.conf
+      copy:
+        content: |
+          # Disable DNS Server
+          port=0
+          
+          # Enable DHCP logging
+          log-dhcp
+          
+          # Respond to PXE requests for the specified network;
+          # run as DHCP proxy
+          dhcp-range={{ network }},proxy
+          
+          dhcp-boot=pxelinux.0
+          
+          # Provide network boot option called "Network Boot".
+          pxe-service=x86PC,"Network Boot",pxelinux
+          
+          enable-tftp
+          tftp-root={{ tftp_path }}
+        dest: /etc/dnsmasq.conf
+      notify: restart dnsmasq
+
+    - name: add dnsmasq exception
+      lineinfile:
+        path: /etc/default/dnsmasq 
+        regexp: '^DNSMASQ_EXCEPT='
+        line: DNSMASQ_EXCEPT=lo
+      notify: restart dnsmasq
+
+    - name: disable DNSStubListener
+      lineinfile:
+        path: /etc/systemd/resolved.conf
+        regexp: '^DNSStubListener='
+        line: DNSStubListener=no
+
+    - name: disable systemd-resolved
+      service:
+        name: systemd-resolved
+        enabled: no
+        state: stopped
+
+    - name: check if symlink
+      stat:
+        path: /etc/resolv.conf
+      register: resolv
+
+    - name: delete resolv.conf symlink
+      file:
+        path: /etc/resolv.conf
+        state: absent
+      when: resolv.stat.islnk
+
+    - name: Deploy resolv.conf
+      copy:
+        src: /run/systemd/resolve/stub-resolv.conf
+        dest: /etc/resolv.conf
+        remote_src: yes
+        force: no
+
+    - name: set nameservers
+      lineinfile:
+        path: /etc/resolv.conf
+        regexp: '^nameserver '
+        line: nameserver {{ dns }}
+
+    - name: configure nginx
+      copy:
+        src: nginx.conf
+        dest: /etc/nginx/nginx.conf
+        backup: true
+      notify: restart nginx
+
+  handlers:
+
+    - name: restart dnsmasq
+      service:
+        name: dnsmasq
+        state: restarted
+
+    - name: restart nginx
+      service:
+        name: nginx
+        state: restarted

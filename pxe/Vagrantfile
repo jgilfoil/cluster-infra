@@ -1,0 +1,19 @@
+Vagrant.configure("2") do |config|
+    config.vm.box = "ubuntu/focal64"
+
+    config.vm.network "public_network"
+
+    config.vm.provider "virtualbox" do |vb|
+        vb.name = "pxe_server"
+        # Display the VirtualBox GUI when booting the machine
+        vb.gui = true
+        vb.memory = 2048
+        vb.cpus = 2
+      end
+
+    config.vm.provision "file", source: "./user-data", destination: "/home/vagrant/user-data"
+
+    config.vm.provision "ansible_local" do |ansible|
+        ansible.playbook = "provision_playbook.yml"
+    end
+  end

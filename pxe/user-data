@@ -1,0 +1,40 @@
+#cloud-config
+autoinstall:
+  version: 1
+  apt:
+    geoip: true
+    preserve_sources_list: false
+    primary:
+    - arches: [amd64, i386]
+      uri: http://us.archive.ubuntu.com/ubuntu
+    - arches: [default]
+      uri: http://ports.ubuntu.com/ubuntu-ports
+  identity: {hostname: odroid-1, password: ,
+    realname: Administrator, username: admin}
+  keyboard: {layout: us, variant: ''}
+  locale: en_US
+  network:
+    network:
+      version: 2
+      ethernets:
+        enp0s3:
+          critical: true
+          dhcp-identifier: mac
+          dhcp4: true
+          nameservers:
+            addresses: [1.1.1.1, 1.0.0.1]
+  ssh:
+    allow-pw: true
+    authorized-keys: []
+    install-server: true
+  storage:
+    config:
+    - {ptable: gpt, serial: VBOX_HARDDISK_VBc1972066-3094e696, path: /dev/sda, wipe: superblock-recursive,
+      preserve: false, name: '', grub_device: true, type: disk, id: disk-sda}
+    - {device: disk-sda, size: 1048576, flag: bios_grub, number: 1, preserve: false,
+      type: partition, id: partition-0}
+    - {device: disk-sda, size: 8586788864, wipe: superblock, flag: '', number: 2,
+      preserve: false, type: partition, id: partition-1}
+    - {fstype: ext4, volume: partition-1, preserve: false, type: format, id: format-0}
+    - {device: format-0, path: /, type: mount, id: mount-0}
+    
