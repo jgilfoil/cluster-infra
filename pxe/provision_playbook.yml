@@ -48,6 +48,7 @@
       loop:
         - "{{ tftp_path }}/memtest"
         - "{{ tftp_path }}/pxelinux.cfg"
+        - "{{ tftp_path }}/cloud-init-bios"
 
     - name: Download memtest
       get_url:
@@ -136,6 +137,22 @@
             append root=/dev/ram0 ramdisk_size=1500000 ip=dhcp url=http://{{ ansible_enp0s8.ipv4.address }}/tftpboot/ubuntu-20.04-live-server-amd64.iso autoinstall ds=nocloud-net;s=http://{{ ansible_enp0s8.ipv4.address }}/tftpboot/cloud-init-bios/
         dest: "{{ tftp_path }}/pxelinux.cfg/default"
 
+    - name: create meta-data
+      file:
+        path: "{{ tftp_path }}/cloud-init-bios/meta-data"
+        state: touch
+        owner: root
+        group: root
+        mode: 0444
+
+    - name: copy user-data
+      copy:
+        src: "/home/vagrant/user-data"
+        dest: "{{ tftp_path }}/cloud-init-bios/user-data"
+        remote_src: yes
+        owner: root
+        group: root
+        mode: '0444'
 
     - name: Create symlinks
       file:

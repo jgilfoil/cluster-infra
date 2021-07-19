@@ -9,9 +9,14 @@ autoinstall:
       uri: http://us.archive.ubuntu.com/ubuntu
     - arches: [default]
       uri: http://ports.ubuntu.com/ubuntu-ports
-  identity: {hostname: odroid-1, password: ,
-    realname: Administrator, username: admin}
-  keyboard: {layout: us, variant: ''}
+  identity: 
+    hostname: odroid-1
+    password: "$6$exDY1mhS4KUYCE/2$zmn9ToZwTKLhCw.b4/b.ZRTIZM30JZ4QrOQ2aOXJ8yk96xpcCof0kxKwuX1kqLG/ygbJ1f8wxED22bTL4F46P0"
+    realname: Administrator
+    username: admin
+  keyboard: 
+    layout: us
+    variant: ''
   locale: en_US
   network:
     network:
