@@ -114,7 +114,7 @@
     - name: Create dnsmasq defaults
       copy:
         content: |
-          default focal-live-install-autoinstall
+          default focal-live-install
           prompt 1
           timeout 15
 
@@ -173,6 +173,8 @@
           
           # Enable DHCP logging
           log-dhcp
+          log-queries
+          log-facility=/var/log/dnsmasq.log
           
           # Respond to PXE requests for the specified network;
           # run as DHCP proxy
