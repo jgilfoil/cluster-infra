@@ -49,24 +49,33 @@
         - "{{ tftp_path }}/memtest"
         - "{{ tftp_path }}/pxelinux.cfg"
         - "{{ tftp_path }}/cloud-init-bios"
+        - "{{ tftp_path }}/grub"
 
-    - name: Download memtest
-      get_url:
-        url: http://www.memtest.org/download/5.01/memtest86+-5.01.bin.gz
-        dest: "{{ tftp_path }}/memtest86+-5.01.bin.gz"
-        owner: root
-        group: root
-        mode: '0444'
+    # - name: Download memtest
+    #   get_url:
+    #     url: http://www.memtest.org/download/5.01/memtest86+-5.01.bin.gz
+    #     dest: "{{ tftp_path }}/memtest86+-5.01.bin.gz"
+    #     owner: root
+    #     group: root
+    #     mode: '0444'
 
-    - name: Extract memtest
-      shell: "cd {{ tftp_path }}; gzip -dk {{ tftp_path }}/memtest86+-5.01.bin.gz"
-      args:
-        creates: /var/lib/tftpboot/memtest86+-5.01.bin
+    # - name: Extract memtest
+    #   shell: "cd {{ tftp_path }}; gzip -dk {{ tftp_path }}/memtest86+-5.01.bin.gz"
+    #   args:
+    #     creates: /var/lib/tftpboot/memtest86+-5.01.bin
 
     - name: Download ubuntu 20.04
       get_url:
         url: https://releases.ubuntu.com/focal/ubuntu-20.04.2-live-server-amd64.iso
         dest: "{{ tftp_path }}/ubuntu-20.04-live-server-amd64.iso"
+        owner: root
+        group: root
+        mode: '0444'
+
+    - name: Download grubefi
+      get_url:
+        url: http://archive.ubuntu.com/ubuntu/dists/focal/main/uefi/grub2-amd64/current/grubnetx64.efi.signed
+        dest: "{{ tftp_path }}/grubnetx64.efi.signed"
         owner: root
         group: root
         mode: '0444'
@@ -79,91 +88,96 @@
         opts: ro,noauto
         state: mounted
 
-    - name: extract vmlinuz
+    - name: extract boot files
       copy:
-        src: /mnt/casper/vmlinuz
-        dest: "{{ tftp_path }}/vmlinuz"
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
         remote_src: yes
         owner: root
         group: root
         mode: '0444'
-
-    - name: extract initrd
-      copy:
-        src: /mnt/casper/initrd
-        dest: "{{ tftp_path }}/initrd"
-        remote_src: yes
-        owner: root
-        group: root
-        mode: '0444'
+      loop:
+        - { src: "/mnt/casper/vmlinuz", dest: "{{ tftp_path }}/vmlinuz" }
+        - { src: "/mnt/casper/initrd", dest: "{{ tftp_path }}/initrd" }
+        - { src: "/mnt/boot/grub/grub.cfg", dest: "{{ tftp_path }}/grub/grub.cfg" }
 
     - name: unmount ubuntu.iso
       mount:
         path: /mnt
         state: unmounted
 
-    - name: move memtest bin
-      copy:
-        src: "{{ tftp_path }}/memtest86+-5.01.bin"
-        dest: "{{ tftp_path }}/memtest/memtest86+-5.01"
-        remote_src: yes
-        owner: root
-        group: root
-        mode: '0644'
+    # - name: move memtest bin
+    #   copy:
+    #     src: "{{ tftp_path }}/memtest86+-5.01.bin"
+    #     dest: "{{ tftp_path }}/memtest/memtest86+-5.01"
+    #     remote_src: yes
+    #     owner: root
+    #     group: root
+    #     mode: '0644'
 
-    - name: Create dnsmasq defaults
-      copy:
-        content: |
-          default focal-live-install
-          prompt 1
-          timeout 15
+    # - name: Create dnsmasq defaults
+    #   copy:
+    #     content: |
+    #       default focal-live-install
+    #       prompt 1
+    #       timeout 15
 
-          label memtest86
-            menu label Memtest86+ 5.01
-            kernel /memtest/memtest86+-5.01
+    #       label memtest86
+    #         menu label Memtest86+ 5.01
+    #         kernel /memtest/memtest86+-5.01
 
-          label focal-live-install
-            menu DEFAULT
-            menu label Install focal
-            kernel vmlinuz
-            initrd initrd
-            append root=/dev/ram0 ramdisk_size=1500000 ip=dhcp url=http://{{ ansible_enp0s8.ipv4.address }}/tftpboot/ubuntu-20.04-live-server-amd64.iso
+    #       label focal-live-install
+    #         menu DEFAULT
+    #         menu label Install focal
+    #         kernel vmlinuz
+    #         initrd initrd
+    #         append root=/dev/ram0 ramdisk_size=1500000 ip=dhcp url=http://{{ ansible_enp0s8.ipv4.address }}/tftpboot/ubuntu-20.04-live-server-amd64.iso
 
-          label focal-live-install-autoinstall
-            menu DEFAULT
-            menu label Install focal - autoinstall
-            kernel vmlinuz
-            initrd initrd
-            append root=/dev/ram0 ramdisk_size=1500000 ip=dhcp url=http://{{ ansible_enp0s8.ipv4.address }}/tftpboot/ubuntu-20.04-live-server-amd64.iso autoinstall ds=nocloud-net;s=http://{{ ansible_enp0s8.ipv4.address }}/tftpboot/cloud-init-bios/
-        dest: "{{ tftp_path }}/pxelinux.cfg/default"
+    #       label focal-live-install-autoinstall
+    #         menu DEFAULT
+    #         menu label Install focal - autoinstall
+    #         kernel vmlinuz
+    #         initrd initrd
+    #         append root=/dev/ram0 ramdisk_size=1500000 ip=dhcp url=http://{{ ansible_enp0s8.ipv4.address }}/tftpboot/ubuntu-20.04-live-server-amd64.iso autoinstall ds=nocloud-net;s=http://{{ ansible_enp0s8.ipv4.address }}/tftpboot/cloud-init-bios/
+    #     dest: "{{ tftp_path }}/pxelinux.cfg/default"
 
-    - name: create meta-data
-      file:
-        path: "{{ tftp_path }}/cloud-init-bios/meta-data"
-        state: touch
-        owner: root
-        group: root
-        mode: 0444
+    - name: add entry to grub config
+      blockinfile:
+        block: |
+          menuentry "Install Ubuntu Server (Focal 20.04.1) (Pull the iso from local server)" {
+                  set gfxpayload=keep
+                  linux   /vmlinuz url=http://{{ ansible_enp0s8.ipv4.address }}/tftpboot/ubuntu-20.04-live-server-amd64.iso only-ubiquity ip=dhcp ---
+                  initrd  /initrd
+          }
+        path: "{{ tftp_path }}/grub/grub.cfg"
 
-    - name: copy user-data
-      copy:
-        src: "/home/vagrant/user-data"
-        dest: "{{ tftp_path }}/cloud-init-bios/user-data"
-        remote_src: yes
-        owner: root
-        group: root
-        mode: '0444'
+    # - name: create meta-data
+    #   file:
+    #     path: "{{ tftp_path }}/cloud-init-bios/meta-data"
+    #     state: touch
+    #     owner: root
+    #     group: root
+    #     mode: 0444
 
-    - name: Create symlinks
-      file:
-        src: "{{ item.src }}"
-        dest: "{{ item.dest }}"
-        owner: root
-        group: root
-        state: link
-      loop:
-        - { src: '/usr/lib/PXELINUX/pxelinux.0', dest: '{{ tftp_path }}/pxelinux.0'}
-        - { src: '/usr/lib/syslinux/modules/bios/ldlinux.c32', dest: '{{ tftp_path }}/ldlinux.c32'}
+    # - name: copy user-data
+    #   copy:
+    #     src: "/home/vagrant/user-data"
+    #     dest: "{{ tftp_path }}/cloud-init-bios/user-data"
+    #     remote_src: yes
+    #     owner: root
+    #     group: root
+    #     mode: '0444'
+
+    # - name: Create symlinks
+    #   file:
+    #     src: "{{ item.src }}"
+    #     dest: "{{ item.dest }}"
+    #     owner: root
+    #     group: root
+    #     state: link
+    #   loop:
+    #     - { src: '/usr/lib/PXELINUX/pxelinux.0', dest: '{{ tftp_path }}/pxelinux.0'}
+    #     - { src: '/usr/lib/syslinux/modules/bios/ldlinux.c32', dest: '{{ tftp_path }}/ldlinux.c32'}
 
     - name: Deploy dnsmasq.conf
       copy:
@@ -176,16 +190,25 @@
           log-queries
           log-facility=/var/log/dnsmasq.log
           
+          enable-tftp
+
           # Respond to PXE requests for the specified network;
           # run as DHCP proxy
           dhcp-range={{ network }},proxy
           
-          dhcp-boot=pxelinux.0
-          
+          # The boot filename, Server name, Server Ip Address
+          dhcp-boot=tag:UEFI,grubnetx64.efi.signed,,
+
+          # PXE menu.  The first part is the text displayed to the user.  The second is the timeout, in seconds.
+          # pxe-prompt="Booting PXE Client", 1
+          pxe-prompt="Booting PXE Client", 5
+
           # Provide network boot option called "Network Boot".
-          pxe-service=x86PC,"Network Boot",pxelinux
-          
-          enable-tftp
+          pxe-service=X86-64_EFI,"Boot UEFI PXE-64",grubnetx64.efi.signed
+
+          dhcp-vendorclass=UEFI,PXEClient:Arch:00009
+
+          # Set the root directory for files available via FTP.
           tftp-root={{ tftp_path }}
         dest: /etc/dnsmasq.conf
       notify: restart dnsmasq
