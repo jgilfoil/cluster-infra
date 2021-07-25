@@ -1,13 +1,13 @@
 ---
 - hosts: all
   become: yes
-  user: vagrant
+  user: ubuntu
   vars:
     - k8s_current_version: "v1.19.13"
   tasks:
 
     - name: Allow ubuntu user to sudo on target node
-      copy: 
+      ansible.builtin.copy: 
         content: |
           #Allow ubuntu to sudo
           ubuntu  ALL=(ALL) NOPASSWD: ALL
@@ -15,17 +15,43 @@
         validate: 'visudo -cf %s'
         mode: 0440
 
-    - name: download kubectl
-      get_url:
-        url: "https://dl.k8s.io/release/{{ k8s_current_version }}/bin/linux/amd64/kubectl"
-        dest: "/home/vagrant/kubectl"
-        owner: root
-        group: root
-        mode: '0444'
-      delegate_to: localhost
-      tags: localsetup
+    - name: Local Setup of vagrant VM environment
+      block:
+        - name: download kubectl
+          ansible.builtin.get_url:
+            url: "https://dl.k8s.io/release/{{ k8s_current_version }}/bin/linux/amd64/kubectl"
+            dest: "/home/vagrant/kubectl"
+            owner: root
+            group: root
+            mode: '0444'
+          tags: localsetup
     
-    - name: install kubectl 
-      shell: install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+        - name: get checksum of downloaded kubectl
+          ansible.builtin.stat:
+            path : "/home/vagrant/kubectl"
+          register: downloaded_kubectl
+     
+        # - name: print downloaded_kubectl stat info
+        #   debug:
+        #     var: downloaded_kubectl.stat
+    
+        - name: set downloaded kubectl hash
+          ansible.builtin.set_fact:
+            downloaded_kubectl_sha1: "{{ downloaded_kubectl.stat.checksum }}"
+        
+        - name: get checksum of installed kubectl
+          ansible.builtin.stat:
+            path : "/usr/local/bin/kubectl"
+          register: installed_kubectl
+        
+        - name: set installed kubectl hash
+          ansible.builtin.set_fact:
+            installed_kubectl_sha1: "{{ installed_kubectl.stat.checksum }}"
+    
+        - name: install kubectl 
+          ansible.builtin.shell: install -o root -g root -m 0755 /home/vagrant/kubectl /usr/local/bin/kubectl
+          when: downloaded_kubectl_sha1 != installed_kubectl_sha1
+          tags: localsetup
+
       delegate_to: localhost
-      tags: localsetup
+    # End of Block #

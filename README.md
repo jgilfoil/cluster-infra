@@ -4,8 +4,9 @@ This repo conatins bootstrapping setup for my home infrastructure.
 
 
 ## Deploying OS on Nodes
-Create boot usb stick with ubuntu 20.04 LTS [installed](https://ubuntu.com/tutorials/create-a-usb-stick-on-windows#1-overview) using [rufus](https://rufus.ie/en_US/) and boot off of it to install.
+Currently a manual process.
 
+Create boot usb stick with ubuntu 20.04 LTS [installed](https://ubuntu.com/tutorials/create-a-usb-stick-on-windows#1-overview) using [rufus](https://rufus.ie/en_US/) and boot off of it to install.
  1. Storage Configuration.
     Use entire Disk
       Sabrent (238.47G)
@@ -21,17 +22,9 @@ Create boot usb stick with ubuntu 20.04 LTS [installed](https://ubuntu.com/tutor
 
 ## k3sup Deployment
 
-Download and install k3sup
+First prep the target server. First time you must specify the become password. The playbook will set NOPASSWORD in the suoders file for subsequent runs.
 ```
-curl -sLS https://get.k3sup.dev | sh
-sudo install k3sup /usr/local/bin/
-```
-Set sudo nopasswd on target server (to be added to ansible prep playbook)
-
-install k3sup
-```
-curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+ansible-playbook odroid-bootstrap.yml -i hosts --limit odroid-## --extra-var="ansible_become_password=<bootstrap password>"
 ```
 
 Install against first master server:
