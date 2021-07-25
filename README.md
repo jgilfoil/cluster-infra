@@ -2,6 +2,8 @@
 
 This repo conatins bootstrapping setup for my home infrastructure. 
 
+## How to Use
+The VagrantFile contains configuration for a "control" vm that is meant to be used as the workstation execution environment for deploying, configuring and administoring the cluster with tools like k3sup, kubectl, etc. I do this because I work on Windows with some constraints around my workstation environment. Eventually i'll move this into a container and WSL2 or something.
 
 ## Deploying OS on Nodes
 Currently a manual process.
@@ -23,7 +25,13 @@ Create boot usb stick with ubuntu 20.04 LTS [installed](https://ubuntu.com/tutor
 
 ## k3sup Deployment
 
-First prep the target server. First time you must specify the become password. The playbook will set NOPASSWORD in the suoders file for subsequent runs.
+First prep the target server. This playbook will:
+ * prep the target server with sudoers nopasswd access for the user account.
+ * set the second nic to be optional to reduce boot time while it dhcp times out on it
+ * set local timezone on target
+ * setup the local control VM environment with tools and configuration needed to control the nodes and cluster.
+
+First time you must specify the sudo password(become). The playbook will set NOPASSWORD in the suoders file so that it won't be required for any subsequent runs against a given target.
 ```
 ansible-playbook odroid-bootstrap.yml -i hosts --limit odroid-## --extra-var="ansible_become_password=<bootstrap password>"
 ```
@@ -34,7 +42,6 @@ export IP=(ip of odroid target)
 k3sup install \
   --ip $IP \
   --user ubuntu \
-  --ssh-key ~/id_rsa.pub \
   --cluster
 ```
 Install and join next master servers
@@ -47,6 +54,16 @@ k3sup join \
   --server-user ubuntu \
   --server-ip $MASTER_IP \
   --server
+#  --k3s-version v1.19.1+k3s1 #if needed
+```
+Install and join an agent server (untested as of yet)
+```
+export IP=(ip of odroid target)
+export MASTER_IP=192.168.1.200
+k3sup join \
+  --ip $IP \
+  --user ubuntu \
+  --server-ip $MASTER_IP
 #  --k3s-version v1.19.1+k3s1 #if needed
 ```
 
