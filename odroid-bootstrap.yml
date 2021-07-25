@@ -1,0 +1,31 @@
+---
+- hosts: all
+  become: yes
+  user: vagrant
+  vars:
+    - k8s_current_version: "v1.19.13"
+  tasks:
+
+    - name: Allow ubuntu user to sudo on target node
+      copy: 
+        content: |
+          #Allow ubuntu to sudo
+          ubuntu  ALL=(ALL) NOPASSWD: ALL
+        dest: /etc/sudoers.d/sudoers
+        validate: 'visudo -cf %s'
+        mode: 0440
+
+    - name: download kubectl
+      get_url:
+        url: "https://dl.k8s.io/release/{{ k8s_current_version }}/bin/linux/amd64/kubectl"
+        dest: "/home/vagrant/kubectl"
+        owner: root
+        group: root
+        mode: '0444'
+      delegate_to: localhost
+      tags: localsetup
+    
+    - name: install kubectl 
+      shell: install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+      delegate_to: localhost
+      tags: localsetup
