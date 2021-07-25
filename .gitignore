@@ -2,4 +2,3 @@
 kubeconfig
 ansible.log
 k3sup
-kubectl
