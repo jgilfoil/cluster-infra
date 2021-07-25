@@ -30,10 +30,6 @@
           ansible.builtin.stat:
             path : "/home/vagrant/kubectl"
           register: downloaded_kubectl
-     
-        # - name: print downloaded_kubectl stat info
-        #   debug:
-        #     var: downloaded_kubectl.stat
     
         - name: set downloaded kubectl hash
           ansible.builtin.set_fact:
@@ -51,7 +47,14 @@
         - name: install kubectl 
           ansible.builtin.shell: install -o root -g root -m 0755 /home/vagrant/kubectl /usr/local/bin/kubectl
           when: downloaded_kubectl_sha1 != installed_kubectl_sha1
-          tags: localsetup
 
+        - name: update /etc/hosts file
+          ansible.builtin.blockinfile:
+            path: /etc/hosts
+            block: |
+              192.168.1.200 odroid-01
+              192.168.1.201 odroid-02
+              192.168.1.202 odroid-03
       delegate_to: localhost
+      tags: localsetup
     # End of Block #
