@@ -49,3 +49,9 @@ k3sup join \
   --server
 #  --k3s-version v1.19.1+k3s1 #if needed
 ```
+
+## Troubleshooting k3s
+
+### Embedded etcd3
+
+See etcd tool and commands [here](https://gist.github.com/superseb/0c06164eef5a097c66e810fe91a9d408)
