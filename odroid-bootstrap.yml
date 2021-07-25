@@ -14,6 +14,22 @@
         dest: /etc/sudoers.d/sudoers
         validate: 'visudo -cf %s'
         mode: 0440
+ 
+    - name: configure network settings
+      ansible.builtin.copy:
+        content: |
+          # This is the network config written by 'subiquity'
+          network:
+            ethernets:
+              enp2s0:
+                dhcp4: true
+                dhcp6: false
+              enp3s0:
+                dhcp4: true
+                optional: true
+            version: 2
+        dest: /etc/netplan/00-installer-config.yaml
+      notify: netplan apply
 
     - name: Local Setup of vagrant VM environment
       block:
@@ -58,3 +74,8 @@
       delegate_to: localhost
       tags: localsetup
     # End of Block #
+
+
+  handlers:
+    - name: netplan apply
+      shell: netplan apply
