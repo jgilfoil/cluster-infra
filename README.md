@@ -29,5 +29,22 @@ ansible-playbook odroid-bootstrap.yml -i hosts --limit odroid-## --extra-var="an
 
 Install against first master server:
 ```
-k3sup install --ip $IP --user ubuntu --ssh-key ~/id_rsa.pub --cluster
+export IP=(ip of odroid target)
+k3sup install \
+  --ip $IP \
+  --user ubuntu \
+  --ssh-key ~/id_rsa.pub \
+  --cluster
+```
+Install and join next master servers
+```
+export IP=(ip of odroid target)
+export MASTER_IP=192.168.1.200
+k3sup join \
+  --ip $IP \
+  --user ubuntu \
+  --server-user ubuntu \
+  --server-ip $MASTER_IP \
+  --server
+#  --k3s-version v1.19.1+k3s1 #if needed
 ```
