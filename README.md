@@ -67,6 +67,16 @@ k3sup join \
 #  --k3s-version v1.19.1+k3s1 #if needed
 ```
 
+## Redeploy of Control VM with Vagrant
+If you rebuild your control VM or need to pull down the kubeconfig info for any reason, run this:
+```
+export IP=192.168.1.200
+k3sup install \
+  --skip-install \
+  --ip $IP \
+  --user ubuntu
+```
+
 ## Troubleshooting k3s
 
 ### Embedded etcd3
