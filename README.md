@@ -85,6 +85,14 @@ k3sup join \
   --server-ip $MASTER_IP
 #  --k3s-version v1.19.1+k3s1 #if needed
 ```
+
+## Commands
+
+Shutdown cluster - This runs the tasks asynchronously so there's no failure of the tasks.
+```
+ansible all -i hosts -B 3600 -P 0 -a "shutdown now" --become
+```
+
 ## Troubleshooting k3s
 
 ### k3s log location
