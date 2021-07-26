@@ -75,12 +75,6 @@
             IdentitiesOnly yes
         dest: /home/vagrant/.ssh/config
 
-    - name: add KUBECONFIG env var to bash profile
-      ansible.builtin.lineinfile:
-        path: /home/vagrant/.bashrc
-        regexp: '^export KUBECONFIG='
-        line: export KUBECONFIG=/home/vagrant/kubeconfig
-
     - name: download SOPS
       ansible.builtin.get_url:
         url: https://github.com/mozilla/sops/releases/download/v{{ sops_version }}/sops_{{ sops_version }}_amd64.deb
