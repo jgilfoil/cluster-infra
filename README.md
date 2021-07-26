@@ -11,16 +11,16 @@ Currently a manual process.
 Create boot usb stick with ubuntu 20.04 LTS [installed](https://ubuntu.com/tutorials/create-a-usb-stick-on-windows#1-overview) using [rufus](https://rufus.ie/en_US/) and boot off of it to install.
  1. Ensure host has a DHCP reservation for it's ip (192.168.1.200-204) from the router.
  2. Storage Configuration.
-    Use entire Disk
-      Sabrent (238.47G)
-    uncheck `Set up this disk as an LVM Group`
+    - Use entire Disk
+      - Sabrent (238.47G)
+    - uncheck `Set up this disk as an LVM Group`
  3. Profile Setup
-    Your Name: Jason
-    Your Servers's Name: odroid-xx
-    Pick a username: ubuntu
-    Password: see safe
+    - Your Name: Jason
+    - Your Servers's Name: odroid-xx
+    - Pick a username: ubuntu
+    - Password: see safe
  4. Check install OpenSSH server
-    import keys from github username
+    - import keys from github username
  5. skip all featured server snaps
 
 ## k3sup Deployment
