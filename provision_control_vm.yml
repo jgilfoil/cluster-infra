@@ -3,7 +3,7 @@
   become: yes
   user: vagrant
   vars:
-   - k8s_current_version: "v1.19.13"
+   - k8s_current_version: "v1.20.5"
    - sops_version: "3.7.1"
    - helm_version: "v3.6.3"
   tasks:

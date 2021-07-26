@@ -61,7 +61,9 @@ export IP=(ip of odroid target)
 k3sup install \
   --ip $IP \
   --user ubuntu \
-  --cluster
+  --cluster \
+  --k3s-extra-args="--disable servicelb --disable traefik" \
+  --k3s-version=v1.20.5+k3s1 
 ```
 Install and join next master servers
 ```
@@ -72,8 +74,8 @@ k3sup join \
   --user ubuntu \
   --server-user ubuntu \
   --server-ip $MASTER_IP \
-  --server
-#  --k3s-version v1.19.1+k3s1 #if needed
+  --server \
+  --k3s-version v1.20.5+k3s1
 ```
 Install and join an agent server (untested as of yet)
 ```
@@ -83,7 +85,7 @@ k3sup join \
   --ip $IP \
   --user ubuntu \
   --server-ip $MASTER_IP
-#  --k3s-version v1.19.1+k3s1 #if needed
+  --k3s-version v1.20.5+k3s1
 ```
 
 ## Commands
