@@ -3,7 +3,7 @@
 This repo conatins bootstrapping setup for my home infrastructure. 
 
 ## How to Use
-The VagrantFile contains configuration for a "control" vm that is meant to be used as the workstation execution environment for deploying, configuring and administoring the cluster with tools like k3sup, kubectl, etc. I do this because I work on Windows with some constraints around my workstation environment. Eventually i'll move this into a container and WSL2 or something.
+The VagrantFile contains configuration for a "control" vm that is meant to be used as the workstation execution environment for deploying, configuring and administering the cluster with tools like k3sup, kubectl, etc. I do this because I work on Windows with some constraints around my workstation environment. Eventually i'll move this into a container and WSL2 or something.
 
 ## Deploying OS on Nodes
 Currently a manual process.
@@ -24,7 +24,7 @@ Create boot usb stick with ubuntu 20.04 LTS [installed](https://ubuntu.com/tutor
  5. skip all featured server snaps
 
 ## Spin up VM Control client
-This VM is used to install all the tools and configuration required to deploy and manage the cluster infrastructure.
+This VM is contains all the tools and configuration required to deploy and manage the cluster infrastructure. The [provision_control_vm.yml](./provision_control_vm.yml) playbook will take care of most of the setup.
 ```
 vagrant up
 vagrant ssh
