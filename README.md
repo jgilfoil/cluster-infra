@@ -31,6 +31,15 @@ vagrant ssh
 ```
 From here on out, all steps will be taken inside this VM.
 
+If you rebuild your control VM after the cluster has been deployed, or need to pull down the kubeconfig info for any reason, run this:
+```
+export IP=192.168.1.200
+k3sup install \
+  --skip-install \
+  --ip $IP \
+  --user ubuntu
+```
+
 ## k3sup Deployment
 
 First prep the target server. This playbook will:
@@ -74,19 +83,14 @@ k3sup join \
   --server-ip $MASTER_IP
 #  --k3s-version v1.19.1+k3s1 #if needed
 ```
-
-## Redeploy of Control VM with Vagrant
-If you rebuild your control VM or need to pull down the kubeconfig info for any reason, run this:
-```
-export IP=192.168.1.200
-k3sup install \
-  --skip-install \
-  --ip $IP \
-  --user ubuntu
-```
-
 ## Troubleshooting k3s
 
+### k3s log location
+```
+less /var/log/k3s.log
+less /var/log/syslog
+journalctl -u k3s
+```
 ### Embedded etcd3
 
 See etcd tool and commands [here](https://gist.github.com/superseb/0c06164eef5a097c66e810fe91a9d408)
