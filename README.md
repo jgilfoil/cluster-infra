@@ -23,16 +23,24 @@ Create boot usb stick with ubuntu 20.04 LTS [installed](https://ubuntu.com/tutor
     - import keys from github username
  5. skip all featured server snaps
 
+## Spin up VM Control client
+This VM is used to install all the tools and configuration required to deploy and manage the cluster infrastructure.
+```
+vagrant up
+vagrant ssh
+```
+From here on out, all steps will be taken inside this VM.
+
 ## k3sup Deployment
 
 First prep the target server. This playbook will:
  * prep the target server with sudoers nopasswd access for the user account.
  * set the second nic to be optional to reduce boot time while it dhcp times out on it
  * set local timezone on target
- * setup the local control VM environment with tools and configuration needed to control the nodes and cluster.
 
 First time you must specify the sudo password(become). The playbook will set NOPASSWORD in the suoders file so that it won't be required for any subsequent runs against a given target.
 ```
+cd /code/cluster-infra
 ansible-playbook odroid-bootstrap.yml -i hosts --limit odroid-## --extra-var="ansible_become_password=<bootstrap password>"
 ```
 
