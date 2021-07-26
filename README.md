@@ -50,7 +50,9 @@ First prep the target server. This playbook will:
 First time you must specify the sudo password(become). The playbook will set NOPASSWORD in the suoders file so that it won't be required for any subsequent runs against a given target.
 ```
 cd /code/cluster-infra
-ansible-playbook odroid-bootstrap.yml -i hosts --limit odroid-## --extra-var="ansible_become_password=<bootstrap password>"
+ansible-playbook odroid-bootstrap.yml -i hosts \
+  --limit odroid-## \
+  --extra-var="ansible_become_password=<bootstrap password>"
 ```
 
 Install against first master server:
