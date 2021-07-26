@@ -1,0 +1,135 @@
+---
+- hosts: all
+  become: yes
+  user: vagrant
+  vars:
+   - k8s_current_version: "v1.19.13"
+   - sops_version: "3.7.1"
+   - helm_version: "v3.6.3"
+  tasks:
+
+    - name: download kubectl
+      ansible.builtin.get_url:
+        url: "https://dl.k8s.io/release/{{ k8s_current_version }}/bin/linux/amd64/kubectl"
+        dest: "/home/vagrant/kubectl"
+        owner: root
+        group: root
+        mode: '0444'
+      tags: localsetup
+
+    - name: get checksum of downloaded kubectl
+      ansible.builtin.stat:
+        path : "/home/vagrant/kubectl"
+      register: downloaded_kubectl
+
+    - name: set downloaded kubectl hash
+      ansible.builtin.set_fact:
+        downloaded_kubectl_sha1: "{{ downloaded_kubectl.stat.checksum }}"
+    
+    - name: get checksum of installed kubectl
+      ansible.builtin.stat:
+        path : "/usr/local/bin/kubectl"
+      register: installed_kubectl
+    
+    - name: set installed kubectl hash
+      ansible.builtin.set_fact:
+        installed_kubectl_sha1: "{{ installed_kubectl.stat.checksum }}"
+      when: installed_kubectl.stat.exists
+
+    - name: install kubectl 
+      ansible.builtin.shell: install -o root -g root -m 0755 /home/vagrant/kubectl /usr/local/bin/kubectl
+      when: downloaded_kubectl_sha1 != installed_kubectl_sha1|default(False)
+
+    - name: install k3sup 
+      ansible.builtin.shell: 
+        cmd: curl -sLS https://get.k3sup.dev | sh
+        creates: /usr/local/bin/k3sup
+
+    - name: update /etc/hosts file
+      ansible.builtin.blockinfile:
+        path: /etc/hosts
+        block: |
+          192.168.1.200 odroid-01
+          192.168.1.201 odroid-02
+          192.168.1.202 odroid-03
+    
+    - name: setup ssh config
+      ansible.builtin.copy:
+        content: |
+          Host odroid-01
+            HostName 192.168.1.200
+            User ubuntu
+            IdentityFile ~/.ssh/id_rsa
+            IdentitiesOnly yes
+          
+          Host odroid-02
+            HostName 192.168.1.201
+            User ubuntu
+            IdentityFile ~/.ssh/id_rsa
+            IdentitiesOnly yes
+
+          Host odroid-03
+            HostName 192.168.1.202
+            User ubuntu
+            IdentityFile ~/.ssh/id_rsa
+            IdentitiesOnly yes
+        dest: /home/vagrant/.ssh/config
+
+    - name: add KUBECONFIG env var to bash profile
+      ansible.builtin.lineinfile:
+        path: /home/vagrant/.bashrc
+        regexp: '^export KUBECONFIG='
+        line: export KUBECONFIG=/home/vagrant/kubeconfig
+
+    - name: download SOPS
+      ansible.builtin.get_url:
+        url: https://github.com/mozilla/sops/releases/download/v{{ sops_version }}/sops_{{ sops_version }}_amd64.deb
+        dest: /home/vagrant/sops_{{ sops_version }}_amd64.deb
+
+    - name: Install a SOPS
+      apt:
+        deb: /home/vagrant/sops_{{ sops_version }}_amd64.deb
+    
+    - name: Install gnupg
+      ansible.builtin.package:
+        name: 
+          - pinentry-gtk2
+          - direnv
+        state: present
+
+    - name: add direnv to bash profile
+      ansible.builtin.lineinfile:
+        path: /home/vagrant/.bashrc
+        regexp: '^eval "$(direnv hook bash)"'
+        line: eval "$(direnv hook bash)"
+
+    - name: Install pre-commit
+      ansible.builtin.pip:
+        name: pre-commit
+
+    - name: Download kustomize
+      ansible.builtin.get_url: 
+        url: https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh
+        dest: /home/vagrant/install_kustomize.sh
+  
+    - name: Execute the kustomize installer
+      ansible.builtin.shell: 
+        cmd: cd /usr/local/bin/;bash /home/vagrant/install_kustomize.sh
+        creates: /usr/local/bin/kustomize
+
+    - name: download helm
+      ansible.builtin.get_url:
+        url: https://get.helm.sh/helm-{{ helm_version }}-linux-amd64.tar.gz
+        dest: /home/vagrant/helm-{{ helm_version }}-linux-amd64.tar.gz
+
+    - name: Extract helm
+      ansible.builtin.unarchive:
+        src: /home/vagrant/helm-{{ helm_version }}-linux-amd64.tar.gz
+        dest: /home/vagrant/
+
+    - name: install helm binary
+      ansible.builtin.copy:
+        src: /home/vagrant/linux-amd64/helm
+        dest: /usr/local/bin/helm
+        owner: root
+        group: root

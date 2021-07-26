@@ -6,20 +6,18 @@
 # backwards compatibility). Please don't change it unless you know what
 # you're doing.
 
-ODROID01 = "192.168.1.200"
-ODROID02 = "192.168.1.201"
-ODROID03 = "192.168.1.202"
 
 Vagrant.configure("2") do |config|
 
-    config.vm.define "k3scontrol", primary: true do |config|
+    config.vm.define "control", primary: true do |config|
       config.vm.box = "ubuntu/focal64"
-      config.vm.hostname = "k3scontrol"
+      config.vm.hostname = "control"
       config.vm.synced_folder ".", "/vagrant"
-      config.vm.synced_folder ".", "/code"
+      config.vm.synced_folder ".", "/code/cluster-infra"
+      config.vm.synced_folder "../k8s-gitops", "/code/k8s-gitops"
 
       config.vm.provider "virtualbox" do |vb|
-        vb.name = "k3scontrol"
+        vb.name = "control"
         vb.memory = "1024"
         vb.cpus = "2"
         vb.gui = false
@@ -30,24 +28,22 @@ Vagrant.configure("2") do |config|
       config.vm.provision "file", source: "c:\\users\\jason\\.ssh\\id_rsa", destination: "/home/vagrant/.ssh/id_rsa"
   
       config.vm.provision "shell", inline: <<-SHELL
-        apt update -y
-        apt-get upgrade -y
-        echo "install pip3========================================"
-        sudo apt-get -y install python3-pip
-        echo "install upgraded cryptography========================================"
-        sudo  pip3 install --user --upgrade cryptography
-        # echo "install helm v3======================================================"
-        # sudo curl -s https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 -o get_helm.sh
-        # sudo chmod 700 get_helm.sh
-        # sudo ./get_helm.sh
-        echo "install requirements========================================"
-        sudo -H -u vagrant pip3 install --user -r /vagrant/requirements.txt
-        grep -qxF 'cd /vagrant' /home/vagrant/.profile || echo 'cd /vagrant' >> /home/vagrant/.profile
-        grep -qxF 'export ANSIBLE_CONFIG=/vagrant/ansible.cfg' /home/vagrant/.profile || echo 'export ANSIBLE_CONFIG=/vagrant/ansible.cfg' >> /home/vagrant/.profile
+        echo "setup environment============================================"
+        grep -qxF 'cd /code/cluster-infra' /home/vagrant/.profile || echo 'cd /code/cluster-infra' >> /home/vagrant/.profile
+        grep -qxF 'export ANSIBLE_CONFIG=/code/cluster-infra/ansible.cfg' /home/vagrant/.profile || echo 'export ANSIBLE_CONFIG=/code/cluster-infra/ansible.cfg' >> /home/vagrant/.profile
         echo "fix ssh key perms============================================"
         chmod 0600 /home/vagrant/.ssh/id_rsa
-        
+        echo "update default python from 2 to 3"
+        update-alternatives --install /usr/bin/python python /usr/bin/python3 1    
       SHELL
+
+      config.vm.provision "ansible_local" do |ansible|
+        ansible.playbook = "provision_control_vm.yml"
+        ansible.install_mode = "pip_args_only"
+        ansible.pip_install_cmd = "sudo apt-get install -y python3-pip python-is-python3 haveged && sudo ln -s -f /usr/bin/pip3 /usr/bin/pip"
+        ansible.pip_args = "ansible==4.3.0"
+      end
+
 
     end
 

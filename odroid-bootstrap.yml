@@ -2,8 +2,6 @@
 - hosts: all
   become: yes
   user: ubuntu
-  vars:
-    - k8s_current_version: "v1.19.13"
   tasks:
 
     - name: Allow ubuntu user to sudo on target node
@@ -38,74 +36,6 @@
         owner: root
         group: root
         state: link
-
-    - name: Local Setup of vagrant VM environment
-      block:
-        - name: download kubectl
-          ansible.builtin.get_url:
-            url: "https://dl.k8s.io/release/{{ k8s_current_version }}/bin/linux/amd64/kubectl"
-            dest: "/home/vagrant/kubectl"
-            owner: root
-            group: root
-            mode: '0444'
-          tags: localsetup
-    
-        - name: get checksum of downloaded kubectl
-          ansible.builtin.stat:
-            path : "/home/vagrant/kubectl"
-          register: downloaded_kubectl
-    
-        - name: set downloaded kubectl hash
-          ansible.builtin.set_fact:
-            downloaded_kubectl_sha1: "{{ downloaded_kubectl.stat.checksum }}"
-        
-        - name: get checksum of installed kubectl
-          ansible.builtin.stat:
-            path : "/usr/local/bin/kubectl"
-          register: installed_kubectl
-        
-        - name: set installed kubectl hash
-          ansible.builtin.set_fact:
-            installed_kubectl_sha1: "{{ installed_kubectl.stat.checksum }}"
-    
-        - name: install kubectl 
-          ansible.builtin.shell: install -o root -g root -m 0755 /home/vagrant/kubectl /usr/local/bin/kubectl
-          when: downloaded_kubectl_sha1 != installed_kubectl_sha1
-
-        - name: update /etc/hosts file
-          ansible.builtin.blockinfile:
-            path: /etc/hosts
-            block: |
-              192.168.1.200 odroid-01
-              192.168.1.201 odroid-02
-              192.168.1.202 odroid-03
-
-        - name: setup ssh config
-          ansible.builtin.copy:
-            content: |
-              Host odroid-01
-                HostName 192.168.1.200
-                User ubuntu
-                IdentityFile ~/.ssh/id_rsa
-                IdentitiesOnly yes
-              
-              Host odroid-02
-                HostName 192.168.1.201
-                User ubuntu
-                IdentityFile ~/.ssh/id_rsa
-                IdentitiesOnly yes
-
-              Host odroid-03
-                HostName 192.168.1.202
-                User ubuntu
-                IdentityFile ~/.ssh/id_rsa
-                IdentitiesOnly yes
-            dest: /home/vagrant/.ssh/config
-
-      delegate_to: localhost
-      tags: localsetup
-    # End of Block #
-
 
   handlers:
     - name: netplan apply
