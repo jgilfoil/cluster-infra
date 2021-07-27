@@ -15,7 +15,7 @@
         owner: root
         group: root
         mode: '0444'
-      tags: localsetup
+        force: yes
 
     - name: get checksum of downloaded kubectl
       ansible.builtin.stat:
@@ -44,6 +44,11 @@
       ansible.builtin.shell: 
         cmd: curl -sLS https://get.k3sup.dev | sh
         creates: /usr/local/bin/k3sup
+
+    - name: install flux 
+      ansible.builtin.shell: 
+        cmd: curl -s https://fluxcd.io/install.sh | bash
+        creates: /usr/local/bin/flux
 
     - name: update /etc/hosts file
       ansible.builtin.blockinfile:
