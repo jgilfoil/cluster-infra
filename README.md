@@ -40,7 +40,7 @@ k3sup install \
   --user ubuntu
 ```
 
-## k3sup Deployment
+## Node Configuration
 
 First prep the target server. This playbook will:
  * prep the target server with sudoers nopasswd access for the user account.
@@ -51,42 +51,11 @@ First time you must specify the sudo password(become). The playbook will set NOP
 ```
 cd /code/cluster-infra
 ansible-playbook odroid-bootstrap.yml -i hosts \
-  --limit odroid-## \
+  --limit odroid-01 \
   --extra-var="ansible_become_password=<bootstrap password>"
 ```
 
-Install against first master server:
-```
-export IP=(ip of odroid target)
-k3sup install \
-  --ip $IP \
-  --user ubuntu \
-  --cluster \
-  --k3s-extra-args="--disable servicelb --disable traefik" \
-  --k3s-version=v1.20.5+k3s1 
-```
-Install and join next master servers
-```
-export IP=(ip of odroid target)
-export MASTER_IP=192.168.1.200
-k3sup join \
-  --ip $IP \
-  --user ubuntu \
-  --server-user ubuntu \
-  --server-ip $MASTER_IP \
-  --server \
-  --k3s-version v1.20.5+k3s1
-```
-Install and join an agent server (untested as of yet)
-```
-export IP=(ip of odroid target)
-export MASTER_IP=192.168.1.200
-k3sup join \
-  --ip $IP \
-  --user ubuntu \
-  --server-ip $MASTER_IP
-  --k3s-version v1.20.5+k3s1
-```
+From here proceed to the [k8s-gitops repo](k8s-gitops repo) to deploy k3s, flux and the rest of the services and apps.
 
 ## Commands
 
