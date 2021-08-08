@@ -3,7 +3,7 @@
   become: yes
   user: vagrant
   vars:
-   - k8s_current_version: "v1.20.5"
+   - k8s_current_version: "v1.21.3"
    - sops_version: "3.7.1"
    - helm_version: "v3.6.3"
   tasks:
@@ -132,3 +132,4 @@
         dest: /usr/local/bin/helm
         owner: root
         group: root
+        mode: 0660
