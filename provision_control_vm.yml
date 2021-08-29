@@ -132,4 +132,4 @@
         dest: /usr/local/bin/helm
         owner: root
         group: root
-        mode: 0660
+        mode: 0755
