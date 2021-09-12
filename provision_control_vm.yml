@@ -6,6 +6,7 @@
    - k8s_current_version: "v1.21.3"
    - sops_version: "3.7.1"
    - helm_version: "v3.6.3"
+   - velero_version: "1.6.3"
   tasks:
 
     - name: download kubectl
@@ -130,6 +131,32 @@
       ansible.builtin.copy:
         src: /home/vagrant/linux-amd64/helm
         dest: /usr/local/bin/helm
+        owner: root
+        group: root
+        mode: 0755
+
+    - name: download minio command utility
+      ansible.builtin.get_url:
+        url: https://dl.min.io/client/mc/release/linux-amd64/mc
+        dest: /usr/local/bin/mc
+        owner: root
+        group: root
+        mode: 0755
+
+    - name: download velero cli
+      ansible.builtin.get_url:
+        url: https://github.com/vmware-tanzu/velero/releases/download/v{{ velero_version }}/velero-v{{ velero_version }}-linux-amd64.tar.gz
+        dest: /home/vagrant/velero-v{{ velero_version }}-linux-amd64.tar.gz
+      
+    - name: Extract velero
+      ansible.builtin.unarchive:
+        src: /home/vagrant/velero-v{{ velero_version }}-linux-amd64.tar.gz
+        dest: /home/vagrant/
+
+    - name: install helm binary
+      ansible.builtin.copy:
+        src: /home/vagrant/velero-v{{ velero_version }}-linux-amd64/velero
+        dest: /usr/local/bin/velero
         owner: root
         group: root
         mode: 0755
