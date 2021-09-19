@@ -160,3 +160,8 @@
         owner: root
         group: root
         mode: 0755
+
+    - name: Install jq
+      ansible.builtin.package:
+        name: jq
+        state: present
