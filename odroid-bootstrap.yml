@@ -70,6 +70,11 @@
           }
       notify: Restart unattended-upgrades service
 
+    - name: install packages
+      ansible.builtin.package:
+        name:
+          - nfs-common
+
     - name: Start unattended-upgrades service
       ansible.builtin.systemd:
         name: unattended-upgrades
