@@ -46,6 +46,9 @@ First prep the target server. This playbook will:
  * prep the target server with sudoers nopasswd access for the user account.
  * set the second nic to be optional to reduce boot time while it dhcp times out on it
  * set local timezone on target
+ * set max number inotify user watches
+ * setup un-attended upgrades
+ * install nfs-common package to mount nfs shares from NAS
 
 First time you must specify the sudo password(become). The playbook will set NOPASSWORD in the suoders file so that it won't be required for any subsequent runs against a given target.
 ```
@@ -63,15 +66,3 @@ Shutdown cluster - This runs the tasks asynchronously so there's no failure of t
 ```
 ansible all -i hosts -B 3600 -P 0 -a "shutdown now" --become
 ```
-
-## Troubleshooting k3s
-
-### k3s log location
-```
-less /var/log/k3s.log
-less /var/log/syslog
-journalctl -u k3s
-```
-### Embedded etcd3
-
-See etcd tool and commands [here](https://gist.github.com/superseb/0c06164eef5a097c66e810fe91a9d408)
