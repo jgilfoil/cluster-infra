@@ -90,11 +90,12 @@
       apt:
         deb: /home/vagrant/sops_{{ sops_version }}_amd64.deb
     
-    - name: Install gnupg
+    - name: Install packages
       ansible.builtin.package:
         name: 
           - pinentry-gtk2
           - direnv
+          - jq
         state: present
 
     - name: add direnv to bash profile
@@ -160,8 +161,3 @@
         owner: root
         group: root
         mode: 0755
-
-    - name: Install jq
-      ansible.builtin.package:
-        name: jq
-        state: present
