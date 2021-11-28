@@ -76,19 +76,6 @@
         enabled: true
         state: started
 
-    - name: Install packages
-      ansible.builtin.package:
-        name: 
-          - jq
-        state: present
-
-    - name: download k1s dashboard script
-      ansible.builtin.get_url:
-        url: "https://raw.githubusercontent.com/weibeld/k1s/master/k1s"
-        dest: /usr/local/bin/k1s
-        owner: root
-        group: ubuntu
-        mode: '0554'
 
   handlers:
     - name: netplan apply
@@ -100,3 +87,56 @@
         daemon_reload: true
         enabled: true
         state: restarted
+
+- hosts: odroid-01
+  become: yes
+  user: ubuntu
+  tasks:
+
+    - name: Install packages
+      ansible.builtin.package:
+        name: 
+          - jq
+        state: present
+
+    - name: Ensure group 'dashboard' exists
+      ansible.builtin.group:
+        name: dashboard
+        state: present
+
+    - name: Add the user 'dashboard'
+      ansible.builtin.user:
+        name: dashboard
+        group: dashboard
+        shell: /bin/bash
+
+    - name: download k1s dashboard script
+      ansible.builtin.get_url:
+        url: "https://raw.githubusercontent.com/weibeld/k1s/master/k1s"
+        dest: /usr/local/bin/k1s
+        owner: root
+        group: dashboard
+        mode: '0554'
+
+    - name: Create a kube directory
+      ansible.builtin.file:
+        path: /home/dashboard/.kube
+        state: directory
+        owner: dashboard
+        group: dashboard
+        mode: '0755'
+
+    - name: copy kubeconfig to dashboard user
+      ansible.builtin.copy:
+        src: /etc/rancher/k3s/k3s.yaml
+        dest: /home/dashboard/.kube/config
+        remote_src: yes
+        owner: dashboard
+        group: dashboard
+        mode: 0644
+
+    - name: add kubeconfig env var to dashboard profile
+      ansible.builtin.lineinfile:
+        path: /home/dashboard/.bashrc
+        regexp: '^export KUBECONFIG='
+        line: 'export KUBECONFIG=~/.kube/config'
