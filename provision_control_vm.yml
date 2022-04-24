@@ -8,6 +8,9 @@
    - helm_version: "v3.6.3"
    - velero_version: "1.6.3"
    - terraform_version: "1.1.6"
+   - krew_version: "0.4.3"
+   - krew_plugins:
+       - rook-ceph
   tasks:
 
     - name: download kubectl
@@ -109,6 +112,10 @@
       ansible.builtin.pip:
         name: pre-commit
 
+    - name: Install docker python module
+      ansible.builtin.pip:
+        name: docker
+
     - name: Download kustomize
       ansible.builtin.get_url: 
         url: https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh
@@ -177,3 +184,48 @@
       ansible.builtin.package:
         name: terraform={{ terraform_version }}
         state: present
+
+    - name: Fetch krew
+      get_url:
+        url: "https://github.com/kubernetes-sigs/krew/releases/download/v{{ krew_version }}/krew-linux_amd64.tar.gz"
+        dest: /home/vagrant/krew.tar.gz
+    
+    - name: Make tempdir
+      file:
+        path: /home/vagrant/krew_tmp
+        state: directory
+    
+    - name: Unarchive krew
+      unarchive:
+        src: /home/vagrant/krew.tar.gz
+        dest: /home/vagrant/krew_tmp
+        remote_src: true
+    
+    - name: Set fact Amd64 fact on x86_64 platforms
+      set_fact:
+        linux_platform: amd64
+      when: ansible_architecture == "x86_64"
+    
+    - name: Set fact Arm fact on Arm platforms
+      set_fact:
+        linux_platform: arm
+      when: ansible_architecture == "arm"
+    
+    - name: Copy krew plugin to /usr/local/bin
+      copy:
+        src: "/home/vagrant/krew_tmp/krew-{{ ansible_system|lower }}_{{ linux_platform }}"
+        dest: /usr/local/bin/kubectl-krew
+        mode: 0755
+        remote_src: true
+    
+    - name: Run Krew Update
+      shell: /usr/local/bin/kubectl krew update
+      become: no
+      args:
+        creates: /root/.krew/index/plugins/krew_plugins.yaml
+
+    - name: Install krew plugins
+      shell: "kubectl krew install {{ item }}"
+      become: no
+      with_items: "{{ krew_plugins }}"
+      when: krew_plugins is defined
