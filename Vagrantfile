@@ -30,6 +30,8 @@ Vagrant.configure("2") do |config|
       config.vm.provision "shell", inline: <<-SHELL
         echo "setup environment============================================"
         grep -qxF 'cd /code/cluster-infra' /home/vagrant/.profile || echo 'cd /code/cluster-infra' >> /home/vagrant/.profile
+        grep -qxF 'alias k=kubectl' /home/vagrant/.profile || echo 'alias k=kubectl' >> /home/vagrant/.profile
+        grep -qxF 'export PATH="${PATH}:${HOME}/.krew/bin"' || echo 'export PATH="${PATH}:${HOME}/.krew/bin"' >> /home/vagrant/.profile
         grep -qxF 'export ANSIBLE_CONFIG=/code/cluster-infra/ansible.cfg' /home/vagrant/.profile || echo 'export ANSIBLE_CONFIG=/code/cluster-infra/ansible.cfg' >> /home/vagrant/.profile
         echo "fix ssh key perms============================================"
         chmod 0600 /home/vagrant/.ssh/id_rsa
