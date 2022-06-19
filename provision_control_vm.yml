@@ -229,3 +229,21 @@
       become: no
       with_items: "{{ krew_plugins }}"
       when: krew_plugins is defined
+
+    - name: check if homebrew is installed
+      stat:
+        path: /home/linuxbrew/.linuxbrew/bin/brew
+      register: homebrew_check
+
+
+    - name: install homebrew
+      shell: NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+      become: no
+      when: homebrew_check.stat.exists == False
+
+    - name: install k9s dashboard
+      homebrew:
+        name: derailed/k9s/k9s
+        path: /home/linuxbrew/.linuxbrew/bin
+        state: present
+      become: no

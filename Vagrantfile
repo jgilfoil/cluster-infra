@@ -33,6 +33,7 @@ Vagrant.configure("2") do |config|
         grep -qxF 'alias k=kubectl' /home/vagrant/.profile || echo 'alias k=kubectl' >> /home/vagrant/.profile
         grep -qxF 'export PATH="${PATH}:${HOME}/.krew/bin"' || echo 'export PATH="${PATH}:${HOME}/.krew/bin"' >> /home/vagrant/.profile
         grep -qxF 'export ANSIBLE_CONFIG=/code/cluster-infra/ansible.cfg' /home/vagrant/.profile || echo 'export ANSIBLE_CONFIG=/code/cluster-infra/ansible.cfg' >> /home/vagrant/.profile
+        grep -qxF 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' /home/vagrant/.profile || echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' >> /home/vagrant/.profile
         echo "fix ssh key perms============================================"
         chmod 0600 /home/vagrant/.ssh/id_rsa
         echo "update default python from 2 to 3"
